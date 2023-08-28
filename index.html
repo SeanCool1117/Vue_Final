@@ -7,8 +7,14 @@
     <title>Vite App</title>
   </head>
   <body>
+    <script>
+      function start() {
+        console.log('Google Maps API載入')
+      }
+    </script>
     <div id="app"></div>
-    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBd1p67R2oANqSxT1J08jhI3lx6CRsEFQs&libraries=places&callback=start"></script>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 <template>
+  <div>
   <h2>Product List</h2>
   <RouterLink class="btn btn-primary mb-3" to="/products/add"><i class="bi bi-person-add"></i> 新增</RouterLink>
   <div class="row mb-3">
@@ -38,6 +39,7 @@
     
   </ul>
 </nav>-->
+</div>
 </template>
     
 <script setup>

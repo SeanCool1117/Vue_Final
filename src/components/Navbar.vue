@@ -20,7 +20,17 @@
         <li class="nav-item">
             <RouterLink class="nav-link" to="/products">產品</RouterLink>
         </li>
-     
+        <li class="nav-item">
+            <RouterLink class="nav-link" to="/deliverer">外送員管理</RouterLink>
+        </li>
+        <!-- 不使用，改在外送員登入後才轉移 -->
+        <!-- <li class="nav-item">
+            <RouterLink class="nav-link" to="/deliverer/map">地圖</RouterLink>
+        </li> -->
+        <li class="nav-item">
+            <RouterLink class="nav-link" to="/deliverer/login">外送員登入</RouterLink>
+        </li>
+
       </ul>
     </div>
   </div>
