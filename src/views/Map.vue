@@ -4,8 +4,53 @@
 	<div ref="map" class="google-map"></div>
 
     <button type="button" class="btn btn-success me-1 mt-2" 
+    data-bs-toggle="modal" data-bs-target="#showOrderList" 
+    @click="showOrderListModal(id)"><i class="bi bi-journal-check"></i> 已接訂單</button>
+
+    <button type="button" class="btn btn-success me-1 mt-2" 
     data-bs-toggle="modal" data-bs-target="#showTransportation" 
     @click="showTransportationModal(id)"><i class="bi bi-journal-check"></i> 交通</button>
+
+       <!--showOrderListModal Modal-->
+       <div class="modal fade" id="showOrderList" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">已接訂單</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th class="center">外送地址</th>
+                        <!-- <th class="center">運送時間</th> -->
+                        <th class="center">運費</th>
+                        <th class="center">下單時間</th>
+                        <th class="center">店家地址</th>
+                        <th class="center">店名</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in orderlist" :key="item.order[0]">
+                        <td class="center">{{ item.order[0] }}</td>
+                        <!-- <td class="center">{{ item.order[1] }}</td> -->
+                        <td class="center">{{ item.order[2] }}</td>
+                        <td class="center">{{ item.order[3] }}</td>
+                        <td class="center">{{ item.order[4] }}</td>
+                        <td class="center">{{ item.order[5] }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+                  </div>
+                </div>
+              </div>
+              </div>
+              <!-- Modal-->
 
      <!--showTransportation Modal-->
      <div class="modal fade" id="showTransportation" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
@@ -16,7 +61,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
-                <!-- 交通工具清單 -->
                     <table class="table table-bordered">
                     <thead>
                       <tr>
@@ -35,7 +79,6 @@
                       </tr>
                     </tbody>
                   </table>
-                  <!-- 交通工具清單 -->
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -59,35 +102,47 @@ export default {
 	name: "Map",
     setup(){
         const transportation = ref([]);
+        const orderlist = ref([]);
         const currentDelivererId = ref(null);
         const transportationModalVisible = ref(false);
+        const orderListModalVisible = ref(false);
 
         const showTransportationModal=async(id)=>{
         transportationModalVisible.value=true;
         currentDelivererId.value=id;
-
         const requestData={
         fk_deliverer_id: id
         };
-
         try {
-            //數字轉型
-            const idAsInt = parseInt(id, 10);
-            
             const response = await axios.post(`${URL}transportation/find`, {fk_deliverer_id: id});
             console.log('API Response:', response.data);
             console.log('{fk_deliverer_id: id}的內容:', {fk_deliverer_id: id});
             transportation.value = response.data.list;
-            // console.log(response.data)
-            // console.log(transportation)
             console.log(transportation.value)
         } catch (error) {
             console.error("Error fetching transportation data:", error);
         }
         }
+
+        const showOrderListModal=async(id)=>{
+        orderListModalVisible.value=true;
+        currentDelivererId.value=id;
+
+        try {
+            const response = await axios.post(`${URL}order/deliver/findInProgressByDeliver/${id}`);
+            console.log('API Response:', response.data);
+            orderlist.value = response.data.list;
+            console.log(orderlist.value)
+        } catch (error) {
+            console.error("Error fetching orderlist data:", error);
+        }
+        }
+
         return{
             transportation,
-            showTransportationModal
+            showTransportationModal,
+            orderlist,
+            showOrderListModal,
         };
     },
 	data() {
@@ -245,7 +300,7 @@ export default {
                     <div style="margin-bottom: 3px;">【隱藏】外送地址：${order.address}</div>
                     <div style="margin-bottom: 3px;">【隱藏】訂單ID：${orderID}</div>
                     <div style="margin-bottom: 3px;">【隱藏】訂單狀態：${order.deliver_status}</div>
-                    <div style="margin-bottom: 3px;">運費：40元</div>
+                    <div style="margin-bottom: 3px;">運費：30元</div>
                     <div style="margin-bottom: 3px;">預計運送時間：30 ~ 45 分鐘</div>
                     <div class="button-container">
                         <button class="cancel-button" id="cancel-button">取消</button>
