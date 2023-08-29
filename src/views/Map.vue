@@ -1,43 +1,95 @@
 <template>
+    <h3>{{ name }}, 您好！</h3><!-- <h3>您的外送員ID為: {{ id }}</h3> -->
     <br>
-    <h4>{{ name }}, 您好！</h4><!-- <h4>外送員ID: {{ id }}</h4> -->
-    <br>
-	<div ref="map" class="google-map mb-2"></div>
+	<div ref="map" class="google-map"></div>
+
     <button type="button" class="btn btn-success me-1 mt-2" 
-    data-bs-toggle="modal" data-bs-target="#showDeliverOrderList" 
-    @click="showDeliverOrderListModal(id)"><i class="bi bi-journal-check"></i> 接單資訊</button>
+    data-bs-toggle="modal" data-bs-target="#showTransportation" 
+    @click="showTransportationModal(id)"><i class="bi bi-journal-check"></i> 交通</button>
+
+     <!--showTransportation Modal-->
+     <div class="modal fade" id="showTransportation" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">交通工具</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                <!-- 交通工具清單 -->
+                    <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th class="center">編號</th>
+                        <th class="center">類型</th>
+                        <th class="center">品牌</th>
+                        <th class="center">車號</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="transport in transportation" :key="transport.id">
+                        <td class="center">{{ transport.id }}</td>
+                        <td class="center">{{ transport.type }}</td>
+                        <td class="center">{{ transport.brand }}</td>
+                        <td class="center">{{ transport.license }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <!-- 交通工具清單 -->
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+                  </div>
+                </div>
+              </div>
+              </div>
+              <!-- Modal-->
+
     <div class="container">
     </div>
 </template>
 
 <script>
+import { ref } from "vue";
 import axios from "axios";
-// import { ref } from "vue";
 const URL = import.meta.env.VITE_API_JAVAURL;
-
-// const deliverOrderList=ref([])
-// const deliverOrderListModalVisible=ref(false);
-// 添加currentDelivererId定義
-// const currentDelivererId = ref(null);
-
-// const showDeliverOrderListModal = async(id)=>{
-//     deliverOrderListModalVisible.value=true;
-//     currentDelivererId.value=id;    //DelivererId還是orderID?
-//     console.log("fk_deliverer_id要用的 id = ", id) // 檢查fk_deliverer_id有無值
-//     const requestData={
-//         fk_deliverer_id : id
-//     }
-//     try{
-//         const response = await axios.post(`${URL}order/deliver/findInProgressByDeliver/${id}`, requestData);
-//         // const response = await axios.post(`${URL}order/deliver/findInProgressByDeliver/{id}`, {fk_deliverer_id: id});
-//         deliverOrderList.value = response.data.list;
-//     }catch(error){
-//         console.error("抓取外送員已取得訂單資料時發生錯誤", error);
-//     }
-// }
 
 export default {
 	name: "Map",
+    setup(){
+        const transportation = ref([]);
+        const currentDelivererId = ref(null);
+        const transportationModalVisible = ref(false);
+
+        const showTransportationModal=async(id)=>{
+        transportationModalVisible.value=true;
+        currentDelivererId.value=id;
+
+        const requestData={
+        fk_deliverer_id: id
+        };
+
+        try {
+            //數字轉型
+            const idAsInt = parseInt(id, 10);
+            
+            const response = await axios.post(`${URL}transportation/find`, {fk_deliverer_id: id});
+            console.log('API Response:', response.data);
+            console.log('{fk_deliverer_id: id}的內容:', {fk_deliverer_id: id});
+            transportation.value = response.data.list;
+            // console.log(response.data)
+            // console.log(transportation)
+            console.log(transportation.value)
+        } catch (error) {
+            console.error("Error fetching transportation data:", error);
+        }
+        }
+        return{
+            transportation,
+            showTransportationModal
+        };
+    },
 	data() {
 		return {
 			map: null,
@@ -49,8 +101,6 @@ export default {
             orderButtonText: "接單",
         //  初始化
             markers: [],
-        //  外送員已接訂單
-            // deliverOrderList: [],
 		};
 	},
 
@@ -64,6 +114,7 @@ export default {
         this.id = this.$route.params.id;
     },
 	methods: {
+
         async fetchOrderData(){
             try{
                 const response = await axios.get(`${URL}order/Takables`);
@@ -173,8 +224,7 @@ export default {
         generateInfoContent(order, orderButtonGrayed){
             console.log("Entered generateInfoContent with order:", order); // 這裡將顯示傳遞給這個函數的order
             const buttonText = orderButtonGrayed ? "已接單" : "接單";
-            console.log('generateInfoContent產生內部的order ID = ',order.orderid);
-
+            // console.log('generateInfoContent產生內部的order ID = ',order.orderid);
                 return this.generateInfoContentHTML(buttonText,order);
         },
 
@@ -213,8 +263,8 @@ export default {
                 // 自身為中心
                 center: this.currentLocation,
                 //  縮放比例，數值越大近
-                zoom:15.5
-                // zoom:12
+                // zoom:15.5
+                zoom:12
             })
 
             new google.maps.Marker({

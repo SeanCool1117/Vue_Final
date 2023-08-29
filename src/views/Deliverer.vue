@@ -28,7 +28,7 @@
         <tr v-for="{ id, name, account,phone, birthday, createdate, updatedate, email } in deliverer" :key="id">
           <td class="center id-column">{{ id }}</td>
           <td class="center">{{ name }}</td>
-          <td class   ="center">{{ account }}</td>
+          <td class="center">{{ account }}</td>
           <td class="center">{{ phone }}</td>
           <!-- <td class="center>{{ birthday }}</td> -->
           <!-- <td class="center">{{ createdate }}</td> -->
@@ -129,6 +129,7 @@
 
     try {
         const response = await axios.post(`${URL}transportation/find`, {fk_deliverer_id: id});
+        console.log('{fk_deliverer_id: id}的內容:', {fk_deliverer_id: id});
         // 在 response.data 中獲取交通工具資訊，並將其存儲到你的 Vue 變數中
         // 例如，如果交通工具資訊是 response.data.transportation，將其存儲到 transportation 變數中
         transportation.value = response.data.list;
