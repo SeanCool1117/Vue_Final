@@ -2,17 +2,11 @@
     <h3>{{ name }}, 您好！</h3><!-- <h3>您的外送員ID為: {{ id }}</h3> -->
     <br>
 	<div ref="map" class="google-map"></div>
-
     <button type="button" class="btn btn-success me-1 mt-2" 
     data-bs-toggle="modal" data-bs-target="#showOrderList" 
     @click="showOrderListModal(id)"><i class="bi bi-journal-check"></i> 已接訂單</button>
-
-    <button type="button" class="btn btn-success me-1 mt-2" 
-    data-bs-toggle="modal" data-bs-target="#showTransportation" 
-    @click="showTransportationModal(id)"><i class="bi bi-journal-check"></i> 交通</button>
-
        <!--showOrderListModal Modal-->
-       <div class="modal fade" id="showOrderList" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+       <div class="modal fade custom-modal-size" id="showOrderList" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
               <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -29,17 +23,22 @@
                         <th class="center">下單時間</th>
                         <th class="center">店家地址</th>
                         <th class="center">店名</th>
+                        <th class="center">功能</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr v-for="item in orderlist" :key="item.order[0]">
                         <td class="center">{{ item.order[0] }}</td>
-                        <!-- <td class="center">{{ item.order[1] }}</td> -->
                         <td class="center">{{ item.order[2] }}</td>
                         <td class="center">{{ item.order[3] }}</td>
                         <td class="center">{{ item.order[4] }}</td>
                         <td class="center">{{ item.order[5] }}</td>
-                      </tr>
+
+                        <td class="d-flex align-items-center">
+                        <button class="btn btn-success me-1" @click="completeDeliver(id)">完成</button>
+                        <button class="btn btn-danger me-1" @click="cancelDeliver(id)"><i class="bi bi-x-circle"></i> 取消</button>
+                        </td>
+                    </tr>
                     </tbody>
                   </table>
                   </div>
@@ -51,44 +50,6 @@
               </div>
               </div>
               <!-- Modal-->
-
-     <!--showTransportation Modal-->
-     <div class="modal fade" id="showTransportation" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title">交通工具</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div class="modal-body">
-                    <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th class="center">編號</th>
-                        <th class="center">類型</th>
-                        <th class="center">品牌</th>
-                        <th class="center">車號</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="transport in transportation" :key="transport.id">
-                        <td class="center">{{ transport.id }}</td>
-                        <td class="center">{{ transport.type }}</td>
-                        <td class="center">{{ transport.brand }}</td>
-                        <td class="center">{{ transport.license }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
-                  </div>
-                </div>
-              </div>
-              </div>
-              <!-- Modal-->
-
     <div class="container">
     </div>
 </template>
@@ -97,50 +58,26 @@
 import { ref } from "vue";
 import axios from "axios";
 const URL = import.meta.env.VITE_API_JAVAURL;
-
 export default {
 	name: "Map",
     setup(){
-        const transportation = ref([]);
         const orderlist = ref([]);
         const currentDelivererId = ref(null);
-        const transportationModalVisible = ref(false);
         const orderListModalVisible = ref(false);
-
-        const showTransportationModal=async(id)=>{
-        transportationModalVisible.value=true;
-        currentDelivererId.value=id;
-        const requestData={
-        fk_deliverer_id: id
-        };
-        try {
-            const response = await axios.post(`${URL}transportation/find`, {fk_deliverer_id: id});
-            console.log('API Response:', response.data);
-            console.log('{fk_deliverer_id: id}的內容:', {fk_deliverer_id: id});
-            transportation.value = response.data.list;
-            console.log(transportation.value)
-        } catch (error) {
-            console.error("Error fetching transportation data:", error);
-        }
-        }
 
         const showOrderListModal=async(id)=>{
         orderListModalVisible.value=true;
         currentDelivererId.value=id;
-
         try {
             const response = await axios.post(`${URL}order/deliver/findInProgressByDeliver/${id}`);
-            console.log('API Response:', response.data);
+            // console.log('API Response:', response.data);
             orderlist.value = response.data.list;
-            console.log(orderlist.value)
-        } catch (error) {
-            console.error("Error fetching orderlist data:", error);
+            console.log("orderlist.value====",orderlist.value)
+            } catch (error) {
+                console.error("Error fetching orderlist data:", error);
+            }
         }
-        }
-
         return{
-            transportation,
-            showTransportationModal,
             orderlist,
             showOrderListModal,
         };
@@ -154,22 +91,22 @@ export default {
             infoWindow: null,
         //  接單按鈕狀態
             orderButtonText: "接單",
-        //  初始化
             markers: [],
+        // 存放Google Maps的Marker對象
+            googleMarkers: [], 
+            removeShopId: null,  // 初始化 removeShopId
 		};
-	},
-
-	mounted() {
-		this.initializeMap();
-        this.fetchOrderData();
 	},
     //創建時從route中獲取name和id
     created(){
         this.name = this.$route.params.name;
         this.id = this.$route.params.id;
     },
+	mounted() {
+		this.initializeMap();
+        this.fetchOrderData();
+	},
 	methods: {
-
         async fetchOrderData(){
             try{
                 const response = await axios.get(`${URL}order/Takables`);
@@ -185,20 +122,18 @@ export default {
                 if (order.shopAddress) {
                     if (order.id) {
                         orderIds.push(order.id);//儲存order.id
-
-                        //轉換地址變經緯度
-                        const coordinates = await this.convertAddressToLatng(order.shopAddress);
+                        const coordinates = await this.convertAddressToLatng(order.shopAddress);//轉換地址變經緯度
 
                         if (coordinates) {
                             this.markers.push({
                                 orderid: order.id, // 使用order.id
-                                shop_name: order.shopName,
-                                coordinates: coordinates,
+                                shop_name: order.shopName,//商店名稱
+                                coordinates: coordinates,//座標
                                 address: order.address,  //顧客的地址
-                                customerID: order.customerID, 
-                                deliverFee: order.deliverFee,
+                                customerID: order.customerID, //顧客ID
+                                deliverFee: order.deliverFee,//運費
                                 orderTime: order.orderTime,//下單時間
-                                shopID: order.shopID,
+                                shopID: order.shopID,//店家ID
                                 cus_status: order.cus_status,//顧客下單狀態
                                 shop_status: order.shop_status,//店家下單狀態
                                 deliver_status: order.deliver_status,//外送員接單狀態
@@ -209,19 +144,11 @@ export default {
                             }
                         }
                     }
-
-                // this.addMarkers();
-
             } catch(error){
                 console.error("取得訂單資料時發生錯誤",error);
             }
         },
 		async initializeMap() {
-			// const loader = new Loader({
-            //     //.env variable must contain VITE_ in the front
-			// 	apiKey: import.meta.env.VITE_API_KEY,
-			// 	version: "weekly"
-			// });
         //定位外送員自身位置並設為地圖中心
         if(navigator.geolocation){
             navigator.geolocation.getCurrentPosition(
@@ -233,30 +160,69 @@ export default {
                 alert("Geolocation沒有支援此瀏覽器")
             }
 		},
-        //接單按鈕狀態切換
+        //接單按鈕狀態切換???
         toggleOrderButton(order){
             const currentOrder=order
             this.orderButtonGrayed = !this.orderButtonGrayed;
             this.orderButtonText = this.orderButtonGrayed ? "已接單" : "接單";
             //  外送員接單後回傳
-            this.sendOrderToBackend(currentOrder);
-            
+            this.sendOrderToBackend(currentOrder).then(response => {
+                if (response) {
+                    //成功接單後重新取得新的訂單列表
+                    this.fetchOrderData().then(() => {
+                        //更新Marker
+                        this.addMarkers();
+                    });
+                }
+            });
+
             //更新infoWindow
             if(this.infoWindow){
                 const content = this.generateInfoContent(this.orderButtonGrayed);
                 this.infoWindow.setContent(content);
+            }
+            this.removeShopId=event.target.dataset.orderId;
+
+            //移除已接單的marker
+            if(this.orderButtonText==="已接單"){
+                //移除
+                this.removeShopId=order.shopID;
+                this.removeMarker(this.removeShopId);  // 調用移除marker的函數
+            }
+
+        },
+        //移除marker
+        removeMarker(removeShopId) {
+            // 找到要移除的 marker
+            let markerToRemove = this.googleMarkers.find(marker => marker.shopId === removeShopId);
+            // console.log("1_removeMarker裡的markerToRemove.shopId = ", markerToRemove ? markerToRemove.shopId : 'Not found');
+            // console.log("1_removeMarker裡的removeShopId = ",removeShopId)
+
+            if (markerToRemove) {
+                // 從 googleMarkers array 中移除
+                console.log("Removing marker: ", markerToRemove);
+                this.googleMarkers = this.googleMarkers.filter(marker => marker.shopId !== removeShopId);
+                console.log("2_removeMarker裡的markerToRemove.shopId = ", markerToRemove ? markerToRemove.shopId : 'Not found');
+                console.log("2_removeMarker裡的removeShopId = ",removeShopId)
+                // 從地圖上移除
+                markerToRemove.setMap(null);
+                console.log('Updated googleMarkers是否已移除:', this.googleMarkers);
+            }else{
+                console.warn('No marker found to remove.');
+            }
+
+            //關閉infoWindow
+            if (this.infoWindow) {
+                this.infoWindow.close();
             }
         },
 
         //  外送員接單後回傳
         async sendOrderToBackend(order){
             try{
-                console.log('sendOrderToBackend的資訊內容：')
-                console.log('1.傳入的Order = ',order)
-                console.log('2.Get OrderID = ',this.orderID)
-
                 const orderData={
-                    orderid: this.orderID,
+                    // orderid: this.orderID,
+                    orderid: order.orderid,
                     deliver_status:"已接單",
                     driver:this.$route.params.name,
                     address: this.addressToBackend,
@@ -266,20 +232,21 @@ export default {
                 const response = await axios.put(`${URL}order/takeOrders`, orderData);
                 if(response.data.success===true){
                     alert(response.data.message);
+                    return true;
                 }else{
                     alert(response.data.message);
+                    return false;
                 }
                 }catch(error){
                     console.error("發生錯誤訊息:",error);
                     alert('發生錯誤，請稍後再試。');
+                    return false;
                 }
         },
 
         //產生InfoWindow內部資訊
         generateInfoContent(order, orderButtonGrayed){
-            console.log("Entered generateInfoContent with order:", order); // 這裡將顯示傳遞給這個函數的order
             const buttonText = orderButtonGrayed ? "已接單" : "接單";
-            // console.log('generateInfoContent產生內部的order ID = ',order.orderid);
                 return this.generateInfoContentHTML(buttonText,order);
         },
 
@@ -297,9 +264,9 @@ export default {
 
                 return `
                     <div style="font-weight:bold; margin-bottom: 3px;">${order.shop_name}</div>
-                    <div style="margin-bottom: 3px;">【隱藏】外送地址：${order.address}</div>
-                    <div style="margin-bottom: 3px;">【隱藏】訂單ID：${orderID}</div>
-                    <div style="margin-bottom: 3px;">【隱藏】訂單狀態：${order.deliver_status}</div>
+                    <div style="margin-bottom: 3px;">顧客地址：${order.address}</div>
+                    <div style="margin-bottom: 3px;">【隱藏】店家ID：${order.shopID}</div>
+                    <div style="margin-bottom: 3px;">【隱藏】訂單ID：${order.orderid}</div>
                     <div style="margin-bottom: 3px;">運費：30元</div>
                     <div style="margin-bottom: 3px;">預計運送時間：30 ~ 45 分鐘</div>
                     <div class="button-container">
@@ -308,18 +275,16 @@ export default {
                     </div>
                 `;
             },
-
         onCurrentPositionSuccess(position){
             const{latitude, longitude} = position.coords
-            // console.log(position.coords)
             this.currentLocation = new google.maps.LatLng(latitude, longitude)
             this.map= new google.maps.Map(this.$refs.map, {
 
                 // 自身為中心
                 center: this.currentLocation,
                 //  縮放比例，數值越大近
-                // zoom:15.5
-                zoom:12
+                zoom:15.5
+                // zoom:12
             })
 
             new google.maps.Marker({
@@ -327,7 +292,6 @@ export default {
                 map:this.map,
                 title:"Current Location"
             })
-
             //增加中心環
             const circle = new google.maps.Circle({
             strokeColor: "#25b2ee",
@@ -340,7 +304,6 @@ export default {
             // radius: 1500,
             radius: 900,
             });
-
             this.addMarkers();
         },
         onCurrentPositionError(error) {
@@ -351,13 +314,14 @@ export default {
             const self = this;
 
             this.markers.forEach((order) => {
-                // 確保每個order都有shop_name
                 if (!order.shop_name) {
                     console.warn("Missing shop name for order:", order);
                     return; // 如果缺少shop_name，則跳過此標記
                 }
 
                 const googleMarker = new google.maps.Marker({
+                    orderId:order.orderid,
+                    shopId:order.shopID,
                     title: order.shop_name,
                     position: {
                         lat: parseFloat(order.coordinates.lat),
@@ -365,6 +329,9 @@ export default {
                     },
                     map: this.map,
                 });
+
+                // 儲存googleMarker對象
+                this.googleMarkers.push(googleMarker);
                 
                 // 產生infoContent
                     const content = self.generateInfoContentHTML(self.orderButtonGrayed, order);
@@ -389,8 +356,11 @@ export default {
                             infoWindow.close(); //關閉infoWindow
                         })
                         const orderButton = document.getElementById("order-button");
+                        //test 將orderId 存到按鈕的 dataset
+                        orderButton.dataset.orderId = order.shopID;
                         orderButton.textContent = self.orderButtonText;
-                        orderButton.addEventListener("click", self.toggleOrderButton);
+                        orderButton.addEventListener("click", (event) => self.toggleOrderButton(order, event));
+
                     });
                 })
             })
@@ -400,10 +370,8 @@ export default {
             try{
                 const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=AIzaSyBJmsd-j2EthUiRXfg7BRdYpgCgs2QBdFQ`);
                 const data = await response.json();
-                // console.log("Geocoding回應",data);
                 if (data.results && data.results.length > 0) {
                     const location =data.results[0].geometry.location;
-                    // console.log(`【原始地址】轉換為座標: ${address}, Lat: ${location.lat}, Lng: ${location.lng}`);
                     return location;
                 }
                 return null;
@@ -412,6 +380,19 @@ export default {
                 return null;
             }
         },
+        //外送員完成訂單
+        async completeDeliver(id){
+            let completedId =id
+            const response = await axios.put(`${URL}order/complete/${id}`,completedId);
+
+            if(response.data.success){
+                alert(response.data.message)
+                return true;
+            }else{
+                alert(response.data.message);
+                return false;
+            }
+        }
 	},
 };
 </script>
@@ -472,4 +453,8 @@ export default {
     border-radius: 5px;
     cursor: pointer;
 }
+.custom-modal-size .modal-dialog {
+  max-width: 200%;
+}
+
 </style>
