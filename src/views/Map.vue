@@ -261,12 +261,11 @@ export default {
                     return '';
                 }
                 this.orderID = order.orderid;
-
+                // <div style="margin-bottom: 3px;">【隱藏】店家ID：${order.shopID}</div>
+                // <div style="margin-bottom: 3px;">【隱藏】訂單ID：${order.orderid}</div>
                 return `
                     <div style="font-weight:bold; margin-bottom: 3px;">${order.shop_name}</div>
                     <div style="margin-bottom: 3px;">顧客地址：${order.address}</div>
-                    <div style="margin-bottom: 3px;">【隱藏】店家ID：${order.shopID}</div>
-                    <div style="margin-bottom: 3px;">【隱藏】訂單ID：${order.orderid}</div>
                     <div style="margin-bottom: 3px;">運費：30元</div>
                     <div style="margin-bottom: 3px;">預計運送時間：30 ~ 45 分鐘</div>
                     <div class="button-container">
@@ -403,7 +402,7 @@ export default {
                 orderid:orderId,
                 deliver_status:"未接單"
             }
-            const response = await axios.put(`${URL}order/terminate/`,cancelData);
+            const response = await axios.put(`${URL}order/terminate`,cancelData);
 
             if(response.data.success){
                 //從orderlist移除該訂單
