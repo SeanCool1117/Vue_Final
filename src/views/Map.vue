@@ -17,6 +17,7 @@
                     <table class="table table-bordered">
                     <thead>
                       <tr>
+                        <th class="center">訂單編號</th>
                         <th class="center">外送地址</th>
                         <!-- <th class="center">運送時間</th> -->
                         <th class="center">運費</th>
@@ -29,14 +30,16 @@
                     <tbody>
                       <tr v-for="item in orderlist" :key="item.order[0]">
                         <td class="center">{{ item.order[0] }}</td>
-                        <td class="center">{{ item.order[2] }}</td>
+                        <td class="center">{{ item.order[1] }}</td>
+                        <!-- <td class="center">{{ item.order[2] }}</td> -->
                         <td class="center">{{ item.order[3] }}</td>
                         <td class="center">{{ item.order[4] }}</td>
                         <td class="center">{{ item.order[5] }}</td>
+                        <td class="center">{{ item.order[6] }}</td>
 
                         <td class="d-flex align-items-center">
-                        <button class="btn btn-success me-1" @click="completeDeliver(id)">完成</button>
-                        <button class="btn btn-danger me-1" @click="cancelDeliver(id)"><i class="bi bi-x-circle"></i> 取消</button>
+                        <button class="btn btn-success me-1" @click="completeDeliver(item.order[0])">完成</button>
+                        <button class="btn btn-danger me-1" @click="cancelDeliver(item.order[0])"><i class="bi bi-x-circle"></i> 取消</button>
                         </td>
                     </tr>
                     </tbody>
@@ -44,7 +47,6 @@
                   </div>
                   <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
                   </div>
                 </div>
               </div>
@@ -70,9 +72,9 @@ export default {
         currentDelivererId.value=id;
         try {
             const response = await axios.post(`${URL}order/deliver/findInProgressByDeliver/${id}`);
-            // console.log('API Response:', response.data);
+            // console.log('API Response含有orderid (第一欄):', response.data);
             orderlist.value = response.data.list;
-            console.log("orderlist.value====",orderlist.value)
+            // console.log("orderlist.value含有orderid (第一欄)",orderlist.value)
             } catch (error) {
                 console.error("Error fetching orderlist data:", error);
             }
@@ -80,6 +82,8 @@ export default {
         return{
             orderlist,
             showOrderListModal,
+            //test
+            orderid:orderlist.value.id
         };
     },
 	data() {
@@ -221,7 +225,6 @@ export default {
         async sendOrderToBackend(order){
             try{
                 const orderData={
-                    // orderid: this.orderID,
                     orderid: order.orderid,
                     deliver_status:"已接單",
                     driver:this.$route.params.name,
@@ -254,12 +257,9 @@ export default {
             generateInfoContentHTML(orderButtonText, order){
                 this.addressToBackend = order.address;
                 if(!order){
-                    console.error("order object is undefined");
+                    // console.error("order object is undefined");
                     return '';
                 }
-
-                let orderID = order.orderid // 更改這一行，使用orderid代替id
-                
                 this.orderID = order.orderid;
 
                 return `
@@ -381,17 +381,44 @@ export default {
             }
         },
         //外送員完成訂單
-        async completeDeliver(id){
-            let completedId =id
-            const response = await axios.put(`${URL}order/complete/${id}`,completedId);
+        async completeDeliver(orderId){
+            let completedId =orderId
+            console.log("complete orderId = ", orderId)
+            const response = await axios.put(`${URL}order/complete/${orderId}`,completedId);
+            console.log("response = ", response)
 
             if(response.data.success){
+                //從orderlist移除該訂單
+                this.orderlist = this.orderlist.filter(item=>item.order[0]!==orderId);
                 alert(response.data.message)
                 return true;
             }else{
                 alert(response.data.message);
                 return false;
             }
+        },
+        async cancelDeliver(orderId){
+        try{
+            let cancelData={
+                orderid:orderId,
+                deliver_status:"未接單"
+            }
+            const response = await axios.put(`${URL}order/terminate/`,cancelData);
+
+            if(response.data.success){
+                //從orderlist移除該訂單
+                this.orderlist = this.orderlist.filter(item=>item.order[0]!==orderId);
+                alert(response.data.message)
+                return true;
+            }else{
+                alert(response.data.message);
+                return false;
+            }
+        }catch(error){
+            console.error("發生了錯誤", error);
+            alert("出現問題，請重新嘗試");
+            return false;
+        }
         }
 	},
 };
